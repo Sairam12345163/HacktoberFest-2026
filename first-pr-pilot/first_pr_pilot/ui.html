@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>First PR Pilot</title>
+<style>
+:root{
+  --paper:#eef2ea; --panel:#e2e9dc; --ink:#14312b; --mut:#4d645d; --rule:#c1cdbf;
+  --blaze:#d99100; --blazebg:#fff0c9; --btn:#14312b; --btnfg:#eef2ea;
+  --err:#a4251c; --errbg:#fbe4e1; --ok:#1f7a4d; --code:#dbe4d5;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --paper:#0e1915; --panel:#15241e; --ink:#e3eee7; --mut:#93aaa1; --rule:#294038;
+  --blaze:#f2b632; --blazebg:#3a2f0e; --btn:#e3eee7; --btnfg:#0e1915;
+  --err:#ff9a8f; --errbg:#3b1815; --ok:#5fd39b; --code:#1c2d26;
+}}
+*{box-sizing:border-box}
+html{background:var(--paper)}
+body{margin:0;font:16px/1.55 var(--sans);color:var(--ink);background:var(--paper)}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--blaze);outline-offset:2px}
+.wrap{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:0;min-height:100vh}
+aside{background:var(--panel);padding:2.5rem 1.75rem;border-right:1px solid var(--rule)}
+aside .in{position:sticky;top:2rem}
+main{padding:2.5rem clamp(1.25rem,5vw,4rem);max-width:56rem}
+h1{font:700 2.1rem/1.1 var(--serif);margin:0 0 .5rem;letter-spacing:-.01em}
+.lede{color:var(--mut);margin:0 0 1.5rem}
+label{display:block;font-weight:600;margin:1.1rem 0 .3rem}
+.hint{font-size:.875rem;color:var(--mut);margin:0 0 .35rem}
+textarea,input{width:100%;font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:.6rem .7rem}
+textarea{resize:vertical;min-height:9rem}
+textarea:focus,input:focus{border-color:var(--ink)}
+.bad{border-color:var(--err)!important}
+button{font:inherit;cursor:pointer;border-radius:6px}
+.go{width:100%;margin-top:1.25rem;padding:.8rem;border:0;background:var(--btn);color:var(--btnfg);font-weight:700;font-size:1.05rem}
+.go:disabled{opacity:.55;cursor:progress}
+.ghost{background:none;border:1px solid var(--rule);color:var(--ink);padding:.3rem .7rem;font-size:.875rem}
+.ghost:hover{border-color:var(--ink)}
+.link{background:none;border:0;padding:0;color:var(--ink);text-decoration:underline;font-size:.9rem}
+details{margin-top:1rem}summary{cursor:pointer;color:var(--mut);font-size:.9rem}
+#status{display:flex;gap:.5rem;align-items:flex-start;font-size:.9rem;margin:0 0 1.5rem;padding:.6rem .75rem;border-radius:6px;background:var(--paper)}
+#status i{flex:none;width:.7rem;height:.7rem;border-radius:50%;margin-top:.4rem;background:var(--mut)}
+#status.ok i{background:var(--ok)} #status.bad i{background:var(--err)}
+#status.bad{background:var(--errbg)}
+.empty{max-width:34rem;margin-top:12vh}
+.empty h2{font:700 1.6rem/1.2 var(--serif);margin:0 0 .75rem}
+.empty p{color:var(--mut)}
+/* the route: used for progress and for steps */
+.route{list-style:none;margin:0;padding:0 0 0 1.6rem;position:relative;counter-reset:wp}
+.route::before{content:"";position:absolute;left:.62rem;top:.9rem;bottom:.9rem;width:2px;background:var(--rule)}
+.route>li{position:relative;padding:.35rem 0 .9rem .9rem;counter-increment:wp}
+.route>li::before{content:"";position:absolute;left:-1.3rem;top:.62rem;width:.9rem;height:.9rem;border-radius:50%;background:var(--paper);border:2px solid var(--rule)}
+.route.num>li::before{content:counter(wp);display:grid;place-items:center;width:1.5rem;height:1.5rem;left:-1.55rem;top:.2rem;font:700 .8rem var(--sans);background:var(--blaze);border-color:var(--blaze);color:#14312b}
+.route li.done::before{background:var(--ok);border-color:var(--ok)}
+.route li.active::before{background:var(--blaze);border-color:var(--blaze);box-shadow:0 0 0 5px var(--blazebg)}
+.route li.failed::before{background:var(--err);border-color:var(--err)}
+@media (prefers-reduced-motion:no-preference){.route li.active::before{animation:pulse 1.4s ease-in-out infinite}}
+@keyframes pulse{50%{box-shadow:0 0 0 9px transparent}}
+.route .note{display:block;color:var(--mut);font-size:.9rem}
+.route li.pending{color:var(--mut)}
+.prog h2{font:700 1.5rem/1.2 var(--serif);margin:0 0 .25rem}
+.meta{color:var(--mut);font-size:.9rem;margin:0 0 1.25rem}
+.slow{background:var(--blazebg);border-left:4px solid var(--blaze);padding:.6rem .9rem;margin:1rem 0;font-size:.92rem}
+.err{background:var(--errbg);border-left:4px solid var(--err);padding:.8rem 1rem;margin:0 0 1rem}
+.err b{display:block;margin-bottom:.2rem}
+/* result */
+.res h2{font:700 1.9rem/1.15 var(--serif);margin:0 0 .6rem}
+.res h3{font:700 1.2rem/1.2 var(--serif);margin:2.2rem 0 .7rem;padding-top:1.2rem;border-top:1px solid var(--rule)}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:.9rem 0 0}
+.chip{border:1px solid var(--rule);border-radius:99px;padding:.15rem .7rem;font-size:.9rem}
+.actions{display:flex;gap:.5rem;margin:1.2rem 0 0;flex-wrap:wrap}
+.warn{background:var(--blazebg);border-left:4px solid var(--blaze);padding:.55rem .9rem;margin:.5rem 0;font-size:.92rem}
+.files{list-style:none;padding:0;margin:0}
+.files li{display:flex;gap:.75rem;align-items:baseline;padding:.45rem 0;border-bottom:1px dashed var(--rule)}
+code{font:.9em ui-monospace,SFMono-Regular,Consolas,monospace;background:var(--code);padding:.1rem .35rem;border-radius:4px;word-break:break-all}
+.files .why{color:var(--mut);font-size:.95rem}
+.checks{list-style:none;padding:0;margin:0}
+.checks li{padding:.3rem 0}
+.checks label{display:flex;gap:.6rem;align-items:flex-start;margin:0;font-weight:400;cursor:pointer}
+.checks input{width:auto;margin-top:.35rem}
+.checks input:checked+span{text-decoration:line-through;color:var(--mut)}
+.bullets{margin:0;padding-left:1.2rem}.bullets li{margin:.25rem 0}
+.pr{border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.pr header{display:flex;justify-content:space-between;gap:1rem;align-items:center;padding:.6rem .9rem;background:var(--panel);font-weight:600}
+.pr pre{margin:0;padding:.9rem;white-space:pre-wrap;font:.92rem/1.5 ui-monospace,Consolas,monospace}
+.toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);background:var(--btn);color:var(--btnfg);padding:.5rem 1rem;border-radius:6px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+@media (max-width:820px){.wrap{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--rule)}aside .in{position:static}main{padding-top:1.75rem}.empty{margin-top:2rem}}
+</style>
+
+<div class="wrap">
+<aside><div class="in">
+  <h1>First PR Pilot</h1>
+  <p class="lede">Paste a GitHub issue. Get a route for your first pull request, planned by a model running on your own machine.</p>
+  <p id="status" role="status"><i></i><span>Checking your local model...</span></p>
+
+  <label for="issue">Issue</label>
+  <p class="hint">A link like github.com/OWNER/REPO/issues/123, or the issue text.</p>
+  <textarea id="issue" placeholder="https://github.com/spotDL/spotify-downloader/issues/2661"></textarea>
+
+  <details id="more">
+    <summary>Options</summary>
+    <label for="repo">Repo (optional)</label>
+    <p class="hint">Leave empty to download the repo from the issue link automatically. Or enter a local folder or repo URL.</p>
+    <input id="repo" placeholder="D:\code\project  or  https://github.com/OWNER/REPO" autocomplete="off">
+    <label for="model">Model (optional)</label>
+    <input id="model" placeholder="qwen2.5-coder:7b" autocomplete="off">
+  </details>
+
+  <button class="go" id="go">Plan my first PR</button>
+  <p class="hint" style="margin-top:.7rem">Ctrl+Enter also works. <button class="link" id="sample" hidden>Load the sample issue</button></p>
+</div></aside>
+
+<main id="main" aria-live="polite">
+  <section class="empty">
+    <h2>From issue to first commit</h2>
+    <p>You will get the files to open first, the project's own rules from CONTRIBUTING, a test plan, questions to ask the maintainers, and a pull request description ready to paste.</p>
+    <p>Everything is generated locally. Only the issue text is downloaded from GitHub.</p>
+  </section>
+</main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let sampleData=null, last=null;
+
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1600)}
+async function copy(text){
+  try{await navigator.clipboard.writeText(text)}catch{
+    const a=document.createElement('textarea');a.value=text;document.body.append(a);a.select();document.execCommand('copy');a.remove()}
+  toast('Copied')
+}
+
+async function health(){
+  const el=$('#status');
+  try{
+    const d=await (await fetch('/api/health')).json();
+    el.className=d.ok?'ok':'bad';
+    el.lastChild.textContent=d.ok?`Local model ready: ${d.model}`:d.error;
+    if(d.sample){sampleData=d.sample;$('#sample').hidden=false}
+    $('#model').placeholder=d.model;
+  }catch{el.className='bad';el.lastChild.textContent='Cannot reach the First PR Pilot server. Restart it with: python -m first_pr_pilot serve'}
+}
+
+$('#sample').onclick=()=>{
+  if(!sampleData)return;
+  $('#issue').value=sampleData.issue;$('#repo').value=sampleData.repo;$('#more').open=true;
+};
+
+function progress(d){
+  const slow=d.elapsed>40&&d.status==='running';
+  const tok=d.tokens?` &middot; ${d.tokens} chunks written`:'';
+  $('#main').innerHTML=`<section class="prog">
+    <h2>Planning your route</h2>
+    <p class="meta">${Math.floor(d.elapsed)}s elapsed${tok}</p>
+    <ol class="route">${d.stages.map(s=>`<li class="${s.state}">${esc(s.label)}${s.state==='active'&&s.note?`<span class="note">${esc(s.note)}</span>`:''}${s.state==='failed'?`<span class="note">Stopped here</span>`:''}</li>`).join('')}</ol>
+    ${slow?`<p class="slow">Still working. The first run loads the model into memory, and small laptops without a GPU can take a few minutes. A smaller model such as qwen2.5-coder:3b is faster.</p>`:''}
+  </section>`;
+}
+
+function fail(d){
+  const input=d.kind==='input';
+  if(input)$('#issue').classList.add('bad');
+  const title=input?'Check your input':d.kind==='model'?'The local model had a problem':'Something went wrong';
+  const el=d.stages?progressHtml(d):'';
+  $('#main').innerHTML=`<section class="prog"><div class="err" role="alert"><b>${title}</b>${esc(d.error)}</div>${el}</section>`;
+}
+function progressHtml(d){
+  return `<ol class="route">${d.stages.map(s=>`<li class="${s.state}">${esc(s.label)}</li>`).join('')}</ol>`;
+}
+
+function list(a,cls){return a.length?`<ul class="${cls||'bullets'}">${a.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p class="meta">Nothing to add.</p>'}
+
+function result(d){
+  last=d;const p=d.plan;
+  $('#main').innerHTML=`<section class="res">
+    <h2>${esc(d.issue_title||'Your plan')}</h2>
+    <p>${esc(p.summary)}</p>
+    <div class="chips"><span class="chip">${esc(p.difficulty)}</span><span class="chip">about ${p.estimated_minutes} minutes</span>${d.repo_path?`<span class="chip">code scanned</span>`:`<span class="chip">no repo scanned</span>`}</div>
+    <div class="actions"><button class="ghost" id="cpmd">Copy as Markdown</button><button class="ghost" id="dlmd">Download .md</button></div>
+    ${d.warnings.map(w=>`<div class="warn"><b>Check this:</b> ${esc(w)}</div>`).join('')}
+
+    <h3>Open these files first</h3>
+    <ul class="files">${p.files_to_inspect.map(f=>`<li><code>${esc(f.path)}</code><span class="why">${esc(f.reason)}</span></li>`).join('')||'<li class="why">No specific files suggested.</li>'}</ul>
+
+    <h3>Your route</h3>
+    <ol class="route num">${p.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
+
+    <h3>Rules from this project</h3>
+    <ul class="checks">${p.conventions_to_follow.map(c=>`<li><label><input type="checkbox"><span>${esc(c)}</span></label></li>`).join('')||'<li class="meta">No contributing rules were found.</li>'}</ul>
+
+    <h3>Test plan</h3>${list(p.test_plan)}
+    <h3>Questions for the maintainers</h3>${list(p.questions_for_maintainers)}
+
+    <h3>Pull request draft</h3>
+    <div class="pr"><header><span>${esc(p.pr_title)}</span><button class="ghost" id="cppr">Copy</button></header><pre>${esc(p.pr_body)}</pre></div>
+  </section>`;
+  $('#cpmd').onclick=()=>copy(d.markdown);
+  $('#cppr').onclick=()=>copy(p.pr_title+'\n\n'+p.pr_body);
+  $('#dlmd').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([d.markdown],{type:'text/markdown'}));a.download='contribution-plan.md';a.click();URL.revokeObjectURL(a.href)};
+  $('#main').scrollIntoView();window.scrollTo({top:0});
+}
+
+async function poll(id){
+  let d;
+  try{d=await (await fetch('/api/job/'+id)).json()}catch{
+    return fail({kind:'error',error:'Lost connection to the First PR Pilot server. Is it still running?'})}
+  if(d.status==='running'){progress(d);setTimeout(()=>poll(id),600)}
+  else if(d.status==='done'){busy(false);result(d)}
+  else{busy(false);fail(d)}
+}
+function busy(b){const g=$('#go');g.disabled=b;g.textContent=b?'Planning...':'Plan my first PR'}
+
+async function start(){
+  $('#issue').classList.remove('bad');
+  const issue=$('#issue').value.trim();
+  if(!issue){$('#issue').classList.add('bad');$('#issue').focus();return fail({kind:'input',error:'Paste a GitHub issue URL or the issue text first.'})}
+  busy(true);
+  progress({elapsed:0,tokens:0,status:'running',stages:[{key:'issue',label:'Read the issue',state:'active',note:'Starting'},{key:'repo',label:'Get the code',state:'pending'},{key:'scan',label:'Find relevant files',state:'pending'},{key:'model',label:'Ask the local model',state:'pending'},{key:'verify',label:'Check the plan',state:'pending'}]});
+  try{
+    const r=await fetch('/api/plan',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({issue,repo:$('#repo').value,model:$('#model').value})});
+    const d=await r.json();
+    if(!r.ok){busy(false);return fail({kind:d.kind||'error',error:d.error})}
+    poll(d.job_id);
+  }catch{busy(false);fail({kind:'error',error:'Cannot reach the First PR Pilot server. Restart it with: python -m first_pr_pilot serve'})}
+}
+$('#go').onclick=start;
+$('#issue').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))start()});
+health();
+</script>
+</html>

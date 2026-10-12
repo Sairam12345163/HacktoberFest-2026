@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "first-pr-pilot"
+version = "0.1.0"
+description = "Turn a GitHub issue + CONTRIBUTING guide into a grounded contribution plan using a local open-weight model (Ollama)."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+first-pr-pilot = "first_pr_pilot.cli:main"
+
+[tool.setuptools]
+packages = ["first_pr_pilot"]
+
+[tool.setuptools.package-data]
+first_pr_pilot = ["ui.html"]
